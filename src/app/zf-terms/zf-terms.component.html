@@ -1,0 +1,16 @@
+<h2>ZfTerms</h2>
+<input type="text" [disabled]="disabled" #termInput>
+<button (click)="add(termInput)" [disabled]="disabled">Add Term</button>
+<hr>
+<input type="text" [disabled]="disabled" #updateInput>
+<button (click)="update(0, updateInput)" [disabled]="disabled">Update Term</button>
+<hr>
+<p *ngIf="errorMessage">* {{ errorMessage }}</p>
+<hr>
+<h3>Terms</h3>
+<ul [ngClass]="{disabled: disabled}">
+  <li
+    *ngFor="let value of data; let i = index"
+    [ngStyle]="{color: i === errorIndex ? 'red' : 'inherit'}"
+  >{{ value }} <a (click)="remove(i)">x</a></li>
+</ul>

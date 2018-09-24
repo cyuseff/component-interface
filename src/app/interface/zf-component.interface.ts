@@ -2,7 +2,7 @@ import { Subject } from 'rxjs';
 import { ZfActions } from '../constants/zf-actions.constant';
 
 export class ZfData {
-  public promise?: {resolve: any, reject: any};
+  public promise: {resolve: any, reject: any};
 
   constructor(
     public action: ZfActions | string | number,

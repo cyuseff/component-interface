@@ -1,16 +1,22 @@
-<h2>ZfTerms</h2>
-<input type="text" [disabled]="disabled" #termInput>
-<button (click)="add(termInput)" [disabled]="disabled">Add Term</button>
+<input type="text" [disabled]="isDisabled()" #termInput>
+<button (click)="add(termInput)" [disabled]="isDisabled()">Add Term</button>
 <hr>
-<input type="text" [disabled]="disabled" #updateInput>
-<button (click)="update(0, updateInput)" [disabled]="disabled">Update Term</button>
+
+<select #termSelect required>
+  <option value="">Select term...</option>
+  <option *ngFor="let term of data; let i = index" [value]="i">{{ term.value }}</option>
+</select>
+<input type="text" [disabled]="isDisabled()" #updateInput>
+<button (click)="update(termSelect, updateInput)" [disabled]="isDisabled()">Update Term</button>
 <hr>
+
 <p *ngIf="errorMessage">* {{ errorMessage }}</p>
 <hr>
-<h3>Terms</h3>
-<ul [ngClass]="{disabled: disabled}">
+
+<h3>List</h3>
+<ul [ngClass]="{disabled: isDisabled()}">
   <li
-    *ngFor="let value of data; let i = index"
-    [ngStyle]="{color: i === errorIndex ? 'red' : 'inherit'}"
-  >{{ value }} <a (click)="remove(i)">x</a></li>
+    *ngFor="let term of data; let i = index"
+    [ngStyle]="{color: term.error ? 'red' : 'inherit'}"
+  >{{ term.value }} <a (click)="remove(i)">x</a></li>
 </ul>

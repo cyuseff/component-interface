@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
-import { Subject } from 'rxjs';
-import { ZfData, ZfError } from './interface/zf-component.interface';
-import { ZfActions } from './constants/zf-actions.constant';
+import { ZfActions, ZfEventData } from './interface/zf-component.interface';
+import { Term } from './zf-terms/zf-terms.component';
+import { CountriesService } from './service/country.service';
 
 @Component({
   selector: 'app-root',
@@ -9,36 +9,88 @@ import { ZfActions } from './constants/zf-actions.constant';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  disabled = false;
+  public disabled = false;  // disable both TermComponents
 
-  termsData = ['term001', 'term002', 'term003'];
-  termsErrors = new Subject<ZfError>();
+  public coutries: Term[];
+  public people: Term[] = [
+    {value: 'Crist', error: false},
+    {value: 'Kav', error: false},
+    {value: 'Robbie', error: false}
+  ];
 
-  onChanges(data: ZfData) {
+  constructor(private countriesService: CountriesService) {
+    countriesService.getCountries().subscribe(
+      coutries => (this.coutries = coutries)
+    );
+  }
+
+  // handles responses with observables
+  public coutriesChange(data: ZfEventData) {
+    this.disabled = true;
     switch (data.action) {
       case ZfActions.Add:
-        this.allMethodsHandler(data);
+        this.countriesService.postCountry(data.result)
+          .subscribe(
+            (res) => {
+              this.disabled = false;
+              data.chainable.resolve(res);
+            },
+            (err) => {
+              this.disabled = false;
+              data.chainable.reject(err);
+            }
+          );
         break;
+
       case ZfActions.Update:
-        this.allMethodsHandler(data);
+        this.countriesService.updateCountries(data.result)
+          .subscribe(
+            (res) => {
+              this.disabled = false;
+              data.chainable.resolve(res);
+            },
+            (err) => {
+              this.disabled = false;
+              data.chainable.reject(err);
+            }
+          );
         break;
+
       case ZfActions.Delete:
-        this.allMethodsHandler(data);
+        this.countriesService.deleteCountry(data.result)
+          .subscribe(
+            (res) => {
+              this.disabled = false;
+              data.chainable.resolve(res);
+            },
+            (err) => {
+              this.disabled = false;
+              data.chainable.reject(err);
+            }
+          );
+        break;
+
+      default:
+        data.chainable.reject(new Error('Action not supported'));
         break;
     }
   }
 
-  allMethodsHandler(data: ZfData) {
+  // handles responses with promises/async pattern
+  public peopleChange(data: ZfEventData) {
+    this.allMethodsHandler(data, 'people');
+  }
+
+  private allMethodsHandler(data: ZfEventData, target: string) {
     this.disabled = true;
 
     this.createPromise()
       .then(() => {
-        this.termsData = data.result;
+        this[target] = data.result;
+        data.chainable.resolve({status: 200});
       })
       .catch(err => {
-        const {error} = data;
-        error.error = err;
-        this.termsErrors.next(error);
+        data.chainable.reject(err);
       })
       .then(() => {
         this.disabled = false;
@@ -52,11 +104,11 @@ export class AppComponent {
         () => {
           const rnd = Math.round(Math.random());
           if (rnd) {
-            return resolve({});
+            return resolve();
           }
-          return reject(new Error('some random error'));
+          return reject(new Error(`Some random error - ${Date.now()}`));
         },
-        2000
+        (Math.round(Math.random() * 1500) + 500)
       );
     });
   }

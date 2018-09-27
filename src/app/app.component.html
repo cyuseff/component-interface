@@ -1,7 +1,20 @@
 <h1>ZfComponentInterface</h1>
-<app-zf-terms
-  [data]="termsData"
-  [disabled]="disabled"
-  (changes)="onChanges($event)"
-  [error]="termsErrors"
-></app-zf-terms>
+
+<div class="flex-container">
+  <div>
+    <h3>Countries</h3>
+    <app-zf-terms
+      [data]="coutries"
+      [disabled]="disabled"
+      (onChanges)="coutriesChange($event)"
+    ></app-zf-terms>
+  </div>
+  <div>
+    <h3>People</h3>
+    <app-zf-terms
+      [data]="people"
+      [disabled]="disabled"
+      (onChanges)="peopleChange($event)"
+    ></app-zf-terms>
+  </div>
+</div>

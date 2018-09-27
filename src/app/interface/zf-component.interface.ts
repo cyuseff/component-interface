@@ -1,33 +1,37 @@
 /* tslint:disable:rule1 no-redundant-jsdoc */
 import { EventEmitter } from '@Angular/core';
 
-export enum ZfActions {
+export enum ZfChainActions {
   Add = 'add',
   Update = 'update',
   Delete = 'delete'
 }
 
-export interface ZfChainable {
-  resolve?: (value?: any) => void;
-  reject?: (reason?: any) => void;
+export interface ZfChain {
+  readonly resolve: (value?: any) => void;
+  readonly reject: (reason?: any) => void;
 }
 
 /**
  * @interface
- * Object emited by ZfComponentInterface
+ * Object emited by ZfChainableComponentInterface
  */
-export interface ZfEventData {
-  readonly action: ZfActions | string;
+export interface ZfChainableEvent {
+  readonly action: ZfChainActions | string;
   readonly oldValue: any;
   readonly newValue: any;
   readonly result: any;
-  readonly chainable: ZfChainable;
+  readonly chainable: ZfChain;
 }
 
 /**
  * @interface
- * ZfComponentInterface sets an standart way that Angular
+ * ZfChainableComponentInterface sets an standart way that Angular
  * component should be implemented.
+ *
+ * @param {any} data - `@Input` data that the component specs
+ * @param {boolean} disabled - `@Input` disables component interactions
+ * @param {EventEmitter<ZfChainableEvent>} onChanges - `@Output` event that emits any change
  *
  * @usageNotes
  *
@@ -37,88 +41,57 @@ export interface ZfEventData {
  * During the async task, lock the component using the `locked` property.
  *
  * ```typescript
- * class ZfTerms implements ZfComponentInterface {
- *   @Input() public data: Array<{value: string, error: boolean}>;
- *   @Input() public disabled: boolean;
- *   @Output() public onChanges: EventEmitter<ZfEventData> = new EventEmitter<ZfEventData>();
- *   private locked: boolean = false;
- *
- *   private update(idx: number, value: string) {
- *     // save oldValue
- *     const oldValue = this.data[idx];
- *
- *     // create the updated object
- *     const newValue = {...oldValue, value, error: false};
- *
- *     // expected component result logic
- *     const result = [...this.data];
- *     result[idx] = newValue;
- *
- *     // create chainable and promise objects
- *     const { chainable, promise} = createChainablePromiseCombo();
- *
- *     // create ZfEventData
- *     const eventData: ZfEventData = {
- *       action: ZfActions.Update, // comunicate action to upstream component
- *       oldValue,  // this is useful when oldValue has an id
- *       newValue,  // the updated data
- *       result,    // use result to mutate data on upstream so it can be propagated
- *       chainable, // use chainable object
- *     };
- *
- *     // resolve logic
- *     promise
- *       // Use for cleanup component's state like lock/unlock.
- *       // Do not mutate `this.data`,
- *       // this changes must come from upstream component/viewController
- *       .then(() => {
- *         // unlock component
- *         this.locked = false;
- *       })
- *       // Handle error. The main advantage is that now
- *       // we have the context of the error.
- *       .catch((err) => {
- *         oldValue.error = true;
- *
- *         // unlock/enabled component
- *         this.locked = false;
- *       });
- *
- *     // Update component's state to reflect the async action
- *     // lock/disable component
- *     this.locked = true;
- *
- *     // Emit event to upstream component
- *     this.onChanges.emit(eventData);
- *   }
- * }
  * ```
- *
- * @interface
- * @param {any} data - `@Input` data that the component specs
- * @param {boolean} disabled - `@Input` disables component interactions
- * @param {EventEmitter<ZfEventData>} onChanges - `@Output` event that emits any change
  */
-export interface ZfComponentInterface {
+export interface ZfChainableComponentInterface {
   data: any;
   disabled: boolean;
-  onChanges: EventEmitter<ZfEventData>;
+  onChanges: EventEmitter<ZfChainableEvent>;
 }
 
 /**
- * @function
- * Convinient function to create `ZfChainable` and `Promise<any>` combo.
- * Both of this object are used by ZfComponentInterface object
- * to perform async tasks and emit events.
- */
-export const createChainablePromiseCombo: () => {
-  chainable: ZfChainable,
+ * Convinient method to create `chaninable` and `promise` objects
+*/
+const createChainablePromiseCombo: () => {
+  chainable: ZfChain,
   promise: Promise<any>
 } = () => {
-  const chainable: ZfChainable = {};
+  let chainable: ZfChain;
   const promise = new Promise((resolve, reject) => {
-    chainable.resolve = resolve;
-    chainable.reject = reject;
+    chainable = {resolve, reject};
   });
   return {chainable, promise};
+};
+
+/**
+ * @function
+ * Creates an `ZfChainableEvent` object and emit it.
+ *
+ * @param emiter - used to comunicate to upstream component
+ * @param action
+ * @param oldValue
+ * @param newValue
+ * @param result
+*/
+export const emitChanableEvent: (
+  emiter: EventEmitter<ZfChainableEvent>,
+  action: ZfChainActions | string,
+  oldValue: any,
+  newValue: any,
+  result: any
+) => Promise<any> = (emiter, action, oldValue, newValue, result) => {
+
+  const { chainable, promise } = createChainablePromiseCombo();
+
+  const eventData: ZfChainableEvent = {
+    action,
+    oldValue,
+    newValue,
+    result,
+    chainable
+  };
+
+  emiter.emit(eventData);
+
+  return promise;
 };

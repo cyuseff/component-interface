@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ZfActions, ZfEventData } from './interface/zf-component.interface';
+import { ZfChainActions, ZfChainableEvent } from './interface/zf-component.interface';
 import { Term } from './zf-terms/zf-terms.component';
 import { CountriesService } from './service/country.service';
 
@@ -25,12 +25,12 @@ export class AppComponent {
   }
 
   // handles responses with observables
-  public coutriesChange(data: ZfEventData) {
+  public coutriesChange(data: ZfChainableEvent) {
     this.disabled = true;
 
     // check data.action to know how to handle the event
     switch (data.action) {
-      case ZfActions.Add:
+      case ZfChainActions.Add:
         this.countriesService.postCountry(data.result) // this should be {data.newValue}
           .subscribe(
             (res) => {
@@ -38,13 +38,14 @@ export class AppComponent {
               data.chainable.resolve(res);
             },
             (err) => {
+              console.error(err);
               this.disabled = false;
               data.chainable.reject(err);
             }
           );
         break;
 
-      case ZfActions.Update:
+      case ZfChainActions.Update:
         this.countriesService.updateCountries(data.result) // this should be {oldValue.id, data.newValue}
           .subscribe(
             (res) => {
@@ -52,13 +53,14 @@ export class AppComponent {
               data.chainable.resolve(res);
             },
             (err) => {
+              console.error(err);
               this.disabled = false;
               data.chainable.reject(err);
             }
           );
         break;
 
-      case ZfActions.Delete:
+      case ZfChainActions.Delete:
         this.countriesService.deleteCountry(data.result) // this should be {oldValue.id}
           .subscribe(
             (res) => {
@@ -66,6 +68,7 @@ export class AppComponent {
               data.chainable.resolve(res);
             },
             (err) => {
+              console.error(err);
               this.disabled = false;
               data.chainable.reject(err);
             }
@@ -79,11 +82,11 @@ export class AppComponent {
   }
 
   // handles responses with promises/async pattern
-  public peopleChange(data: ZfEventData) {
+  public peopleChange(data: ZfChainableEvent) {
     this.allMethodsHandler(data, 'people');
   }
 
-  private allMethodsHandler(data: ZfEventData, target: string) {
+  private allMethodsHandler(data: ZfChainableEvent, target: string) {
     this.disabled = true;
 
     this.createPromise()

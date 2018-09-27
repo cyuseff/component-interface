@@ -40,12 +40,12 @@ export class ZfTermsComponent implements ZfChainableComponentInterface {
     const result = [...this.data, newValue];
 
     this.locked = true;
+    this.errorMessage = '';
 
     // emit data to upstream component
     emitChanableEvent(this.onChanges, ZfChainActions.Add, null, newValue, result)
       .then(() => {
         termInput.value = '';
-        this.errorMessage = '';
       })
       .catch(err => {
         this.errorMessage = err.message;
@@ -71,6 +71,7 @@ export class ZfTermsComponent implements ZfChainableComponentInterface {
     result[idx] = newValue;
 
     this.locked = true;
+    this.errorMessage = '';
 
     emitChanableEvent(this.onChanges, ZfChainActions.Update, oldValue, newValue, result)
       .then(() => {
@@ -91,10 +92,11 @@ export class ZfTermsComponent implements ZfChainableComponentInterface {
 
     oldValue.error = false;
     this.locked = true;
+    this.errorMessage = '';
 
     emitChanableEvent(this.onChanges, ZfChainActions.Delete, oldValue, null, result)
       .then(() => {
-        this.errorMessage = '';
+        // >:D
       })
       .catch(err => {
         this.errorMessage = err.message;

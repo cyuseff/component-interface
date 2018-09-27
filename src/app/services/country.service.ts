@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Term } from '../components/zf-terms/zf-terms.component';
-import { ReplaySubject, Observable, Subject } from 'rxjs';
+import { ReplaySubject, Observable, Subject, timer } from 'rxjs';
 
 // Initial response
 const countries: Term[] = [
@@ -35,22 +35,19 @@ export class CountriesService {
   private createObservableResponse(updatedCountries: Term[]): Subject<any> {
     const sub: Subject<any> = new Subject();
 
-    // mock async task
-    setTimeout(
-      () => {
-        const rnd = Math.round(Math.random());
-        if (rnd) {
-          // update countries$
-          this.countries$.next(updatedCountries);
-          // mock success
-          sub.next();
-          return;
-        }
-        // mock error
-        sub.error(new Error(`Some random error - ${Date.now()}`));
-      },
-      (Math.round(Math.random() * 1500) + 500)
-    );
+    const delayed = timer((Math.round(Math.random() * 1500) + 500));
+    delayed.subscribe(() => {
+      const rnd = Math.round(Math.random());
+      if (rnd) {
+        // update countries$
+        this.countries$.next(updatedCountries);
+        // mock success
+        sub.next();
+        return;
+      }
+      // mock error
+      sub.error(new Error(`Some random error - ${Date.now()}`));
+    });
 
     return sub;
   }

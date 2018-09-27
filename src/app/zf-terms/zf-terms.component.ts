@@ -1,116 +1,165 @@
-import { Component, Input, Output, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
-import { Subject, Subscription } from 'rxjs';
-import { ZfComponentInterface, ZfError, ZfData } from '../interface/zf-component.interface';
-import { ErrAdd, ErrUpdate, ErrDelete } from './zf-terms-errors';
+/* tslint:disable:rule1 no-output-on-prefix */
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter
+} from '@angular/core';
+import {
+  ZfComponentInterface,
+  ZfEventData,
+  ZfActions,
+  createChainablePromiseCombo
+} from '../interface/zf-component.interface';
 
-import { ZfActions } from '../constants/zf-actions.constant';
-import { TermsActions } from './zf-terms-actions';
+export interface Term {
+  value: string;
+  error: boolean;
+}
 
 @Component({
   selector: 'app-zf-terms',
   templateUrl: './zf-terms.component.html',
   styles: ['ul.disabled { color: #ccc; }']
 })
-export class ZfTermsComponent implements ZfComponentInterface, OnInit {
-  @Input() data: string[];
-  @Input() disabled: boolean;
-  @Output() changes = new Subject<ZfData>();
+export class ZfTermsComponent implements ZfComponentInterface {
+  @Input() public data: Term[];
+  @Input() public disabled: boolean;
+  @Output() public onChanges = new EventEmitter<ZfEventData>();
 
-  @ViewChild('termInput') termInputRef: ElementRef;
+  public errorMessage: string;
+  public locked = false;
 
-  errorMessage: string;
-  errorIndex: number;
-
-  ngOnInit() {
-    // this.errorSub = this.error.subscribe(
-    //   (err: ZfError) => {
-    //     console.log('Err received', err);
-    //     // handle error
-    //     if (err instanceof ErrAdd) {
-    //       console.log('Handle ErrAdd');
-    //       const input = this.termInputRef.nativeElement as HTMLInputElement;
-    //       input.value = err.meta.newValue;
-    //       this.errorMessage = err.message;
-    //       return;
-    //     }
-
-    //     if (err instanceof ErrUpdate) {
-    //       console.log('Handle ErrUpdate');
-    //       this.errorIndex = err.meta.idx;
-    //       this.errorMessage = err.message;
-    //       return;
-    //     }
-
-    //     if (err instanceof ErrDelete) {
-    //       console.log('Handle ErrDelete');
-    //       this.errorIndex = err.meta.idx;
-    //       this.errorMessage = err.message;
-    //       return;
-    //     }
-    //   }
-    // );
+  isDisabled(): boolean {
+    return this.disabled || this.locked;
   }
 
   add(termInput: HTMLInputElement) {
     const { value } = termInput;
-    const result = [...this.data, value];
+    // create new object
+    const newValue: Term = {value, error: false};
 
-    const data = new ZfData(ZfActions.Add, null, value, result);
+    // expected component result logic
+    const result = [...this.data, newValue];
 
-    const promise = new Promise((resolve, reject) => {
-      data.promise = {resolve, reject};
-    });
+    // create chainable and promise objects
+    const { chainable, promise } = createChainablePromiseCombo();
 
+    // create ZfEventData
+    const eventData: ZfEventData = {
+      action: ZfActions.Add,
+      oldValue: null,
+      newValue,
+      result,
+      chainable
+    };
+
+    // resolve logic
     promise
-      .then(() => {
+      .then(res => {
         termInput.value = '';
         this.errorMessage = '';
       })
-      .catch((err: Error) => {
-        console.log(err);
+      .catch(err => {
+        console.error(err);
         this.errorMessage = err.message;
+      })
+      .then(() => {
+        this.locked = false;
       });
 
-    this.changes.next(data);
+    // Update component's state to reflect the async action
+    this.locked = true;
+
+    // Emit event to upstream component
+    this.onChanges.emit(eventData);
   }
 
-  update(idx: number, updateInput: HTMLInputElement) {
-    // const value = updateInput.value;
-    // const result = [...this.data];
-    // const oldValue = result[idx];
-    // result[idx] = value;
+  update(termSelect: HTMLSelectElement, updateInput: HTMLInputElement) {
+    if (!termSelect.value || !updateInput.value) {
+      this.errorMessage = 'Both fields are required';
+      return;
+    }
 
-    // const err = new ErrUpdate({idx, oldValue, newValue: value});
+    const idx = +termSelect.value;
+    const {value} = updateInput;
 
-    // const data: ZfData = {
-    //   action: ZfActions.Update,
-    //   oldValue,
-    //   newValue: value,
-    //   result,
-    //   error: err
-    // };
+    // save oldValue
+    const oldValue = this.data[idx];
 
-    // this.errorIndex = null;
+    // create the updated object
+    const newValue = { ...oldValue, value, error: false };
 
-    // this.changes.next(data);
+    // expected component result logic
+    const result = [...this.data];
+    result[idx] = newValue;
+
+    // create chainable and promise objects
+    const { chainable, promise } = createChainablePromiseCombo();
+
+    // create ZfEventData
+    const eventData: ZfEventData = {
+      action: ZfActions.Update, // comunicate action to upstream component
+      oldValue,  // this is useful when oldValue has an id
+      newValue,  // the updated data
+      result,    // use result to mutate data on upstream so it can be propagated
+      chainable, // use chainable object
+    };
+    // resolve logic
+    promise
+    // Use for cleanup component's state like lock/unlock.
+    // Do not mutate `this.data`,
+    // this changes must come from upstream component/viewController
+    .then(() => {
+      // unlock component
+      this.locked = false;
+      updateInput.value = '';
+    })
+    // Handle error. The main advantage is that now
+    // we have the context of the error.
+    .catch ((err) => {
+      console.error(err);
+      this.errorMessage = err.message;
+      oldValue.error = true;
+      // unlock/enabled component
+      this.locked = false;
+    });
+    // Update component's state to reflect the async action
+    // lock/disable component
+    this.locked = true;
+    // Emit event to upstream component
+    this.onChanges.emit(eventData);
   }
 
   remove(idx: number) {
-    // const result = [...this.data];
-    // const oldValue = result.splice(idx, 1)[0];
+    const result: Term[] = [...this.data];
+    const oldValue: Term = result.splice(idx, 1)[0];
 
-    // const err = new ErrDelete({idx});
+    oldValue.error = false;
 
-    // const data: ZfData = {
-    //   action: ZfActions.Delete,
-    //   oldValue,
-    //   newValue: null,
-    //   result,
-    //   error: err
-    // };
+    const { chainable, promise} = createChainablePromiseCombo();
+    const eventData: ZfEventData = {
+      action: ZfActions.Delete,
+      oldValue,
+      newValue: null,
+      result,
+      chainable
+    };
 
-    // this.errorIndex = null;
+    promise
+      .then(() => {
+        this.errorMessage = '';
+      })
+      .catch(err => {
+        console.error(err);
+        this.errorMessage = err.message;
+        oldValue.error = true;
+      })
+      .then(() => {
+        this.locked = false;
+      });
 
-    // this.changes.next(data);
+    this.locked = true;
+    this.onChanges.emit(eventData);
   }
 }

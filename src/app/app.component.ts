@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
-import { ZfChainActions, ZfChainableEvent } from './interface/zf-component.interface';
-import { Term } from './zf-terms/zf-terms.component';
-import { CountriesService } from './service/country.service';
+import { ZfChainableEvent } from './core/zf-chainable.interface';
+import { ZfChainActions } from './core/zf-actions';
+import { Term } from './components/zf-terms/zf-terms.component';
+import { CountriesService } from './services/country.service';
 
 @Component({
   selector: 'app-root',
@@ -15,7 +16,9 @@ export class AppComponent {
   public people: Term[] = [
     {value: 'Crist', error: false},
     {value: 'Kav', error: false},
-    {value: 'Robbie', error: false}
+    {value: 'Robbie', error: false},
+    {value: 'David', error: false},
+    {value: 'Seba', error: false}
   ];
 
   constructor(private countriesService: CountriesService) {

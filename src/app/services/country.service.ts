@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Term } from '../zf-terms/zf-terms.component';
+import { Term } from '../components/zf-terms/zf-terms.component';
 import { ReplaySubject, Observable, Subject } from 'rxjs';
 
 // Initial response

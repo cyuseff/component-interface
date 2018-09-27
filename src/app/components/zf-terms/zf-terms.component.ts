@@ -1,16 +1,14 @@
 /* tslint:disable:rule1 no-output-on-prefix */
+
 import {
   Component,
   Input,
   Output,
   EventEmitter
 } from '@angular/core';
-import {
-  ZfChainableComponentInterface,
-  ZfChainableEvent,
-  ZfChainActions,
-  emitChanableEvent
-} from '../interface/zf-component.interface';
+import { ZfChainableComponentInterface, ZfChainableEvent } from '../../core/zf-chainable.interface';
+import { emitChanableEvent } from '../../core/zf-methods';
+import { ZfChainActions } from '../../core/zf-actions';
 
 export interface Term {
   value: string;

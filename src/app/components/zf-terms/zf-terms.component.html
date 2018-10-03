@@ -1,5 +1,5 @@
 <input type="text" [disabled]="isDisabled()" #termInput>
-<button (click)="add(termInput)" [disabled]="isDisabled()">Add Term</button>
+<button (click)="add()" [disabled]="isDisabled()">Add Term</button>
 <hr>
 
 <select #termSelect required>
@@ -7,7 +7,7 @@
   <option *ngFor="let term of data; let i = index" [value]="i">{{ term.value }}</option>
 </select>
 <input type="text" [disabled]="isDisabled()" #updateInput>
-<button (click)="update(termSelect, updateInput)" [disabled]="isDisabled()">Update Term</button>
+<button (click)="update()" [disabled]="isDisabled()">Update Term</button>
 <hr>
 
 <p *ngIf="errorMessage">* {{ errorMessage }}</p>

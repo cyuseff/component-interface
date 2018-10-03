@@ -6,6 +6,7 @@
     <app-zf-terms
       [data]="coutries"
       [disabled]="disabled"
+      [events$]="this.countriesService.events$"
       (onChanges)="coutriesChange($event)"
     ></app-zf-terms>
   </div>
@@ -14,6 +15,17 @@
     <app-zf-terms
       [data]="people"
       [disabled]="disabled"
+      [events$]="this.peopleService.events$"
+      (onChanges)="peopleChange($event)"
+    ></app-zf-terms>
+  </div>
+  <div>
+    <h3>People2</h3>
+    <p>Demo that components subscribed to same events$ Observable, are aware of if they have to perform any action</p>
+    <app-zf-terms
+      [data]="people"
+      [disabled]="disabled"
+      [events$]="this.peopleService.events$"
       (onChanges)="peopleChange($event)"
     ></app-zf-terms>
   </div>

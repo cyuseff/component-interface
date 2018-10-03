@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Term } from '../components/zf-terms/zf-terms.component';
 import { ReplaySubject, Observable, Subject, timer } from 'rxjs';
+import { ChainableEvent } from '../core/chainable.interface';
+import { ChainState } from '../core/chainable.constants';
 
 // Initial response
 const countries: Term[] = [
@@ -11,9 +13,11 @@ const countries: Term[] = [
 @Injectable({providedIn: 'root'})
 export class CountriesService {
 
-  private countries$: ReplaySubject<Term[]> = new ReplaySubject(1);
+  public countries$: ReplaySubject<Term[]> = new ReplaySubject(1);
+  public events$: Subject<ChainableEvent> = new Subject();
 
   constructor() {
+    // add initial data
     this.countries$.next(countries);
   }
 
@@ -21,35 +25,38 @@ export class CountriesService {
     return this.countries$.asObservable();
   }
 
-  // for demo all operations are handle the same way
-  public postCountry(updatedCountries: Term[]): Subject<any> {
-    return this.createObservableResponse(updatedCountries);
+  // for demo, all operations are handle the same way
+  public postCountry(event: ChainableEvent) {
+    this.createObservableResponse(event);
   }
-  public updateCountries(updatedCountries: Term[]): Subject<any> {
-    return this.createObservableResponse(updatedCountries);
+  public updateCountries(event: ChainableEvent) {
+    this.createObservableResponse(event);
   }
-  public deleteCountry(updatedCountries: Term[]): Subject<any> {
-    return this.createObservableResponse(updatedCountries);
+  public deleteCountry(event: ChainableEvent) {
+    this.createObservableResponse(event);
   }
 
-  private createObservableResponse(updatedCountries: Term[]): Subject<any> {
-    const sub: Subject<any> = new Subject();
+  private createObservableResponse(event: ChainableEvent) {
+    const updatedCountries = event.result;
 
-    const delayed = timer((Math.round(Math.random() * 1500) + 500));
-    delayed.subscribe(() => {
-      const rnd = Math.round(Math.random());
-      if (rnd) {
-        // update countries$
-        this.countries$.next(updatedCountries);
-        // mock success
-        sub.next();
-        return;
-      }
-      // mock error
-      sub.error(new Error(`Some random error - ${Date.now()}`));
-    });
-
-    return sub;
+    // mock async task
+    timer((Math.round(Math.random() * 1500) + 500))
+      .subscribe(() => {
+        const rnd = Math.round(Math.random());
+        if (rnd) {
+          // mark the event as reolved
+          event.state = ChainState.Resolved;
+          // update countries$
+          this.countries$.next(updatedCountries);
+        } else {
+          // mark the event as rejected
+          event.state = ChainState.Rejected;
+          // add the error to event
+          event.error = new Error(`CountriesService error - ${Date.now()}`);
+        }
+        // resolve / reject the event
+        this.events$.next(event);
+      });
   }
 
 }
